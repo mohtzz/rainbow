@@ -4,14 +4,22 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
-// /home/arseny/rbs_studying
+// /home/arseny/rbs_studying/rainbow
 func main() {
+	start := time.Now()
+	defer func() {
+		progTime := time.Since(start)
+		fmt.Println("Время выполнения программы: ", progTime)
+	}()
+
 	inputFilePath := flag.String("src", "", "input")
 	resultDir := flag.String("dst", "result", "output")
 	flag.Parse()
@@ -23,14 +31,29 @@ func main() {
 		return
 	}
 	// создание директории при ее отсутствии
+
 	if _, err := os.Stat(*resultDir); os.IsNotExist(err) {
 		os.MkdirAll(*resultDir, 0755)
 	}
 
-	file, err := os.Open(*inputFilePath)
+	sites, err := readSitesFromFile(*inputFilePath)
 	if err != nil {
-		fmt.Println("error by opening a file:", err)
+		fmt.Println("error by reading file: ", err)
 		return
+	}
+
+	for _, site := range sites {
+		err := processSite(site, *resultDir)
+		if err != nil {
+			fmt.Println("error by processing site: ", err)
+		}
+	}
+}
+
+func readSitesFromFile(filePath string) ([]string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
 	}
 	defer file.Close()
 
@@ -38,42 +61,40 @@ func main() {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if err := scanner.Err(); err != nil {
-			fmt.Println("error by reading file: ", err)
-			return
+			return nil, err
 		}
 		sites = append(sites, scanner.Text())
 	}
+	return sites, nil
+}
 
-	for _, site := range sites {
-		resp, err := http.Get(site)
-		if err != nil {
-			fmt.Println("error by sending response: ", err)
-			continue
-		}
-		defer resp.Body.Close() // проблемный дефер
+func processSite(site string, resultDir string) error {
+	resp, err := http.Get(site)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 
-		if resp.StatusCode == http.StatusOK {
-			filename := filepath.Join(*resultDir, strings.ReplaceAll(site, "/", "_")+".html")
-			file, err := os.Create(filename)
-			if err != nil {
-				fmt.Println("error by creating file: ", err)
-				continue
-			}
-			defer file.Close() // проблемный дефер
-
-			fmt.Println("Файл", filename, "сохранен.")
-
-		} else {
-			fmt.Println("Сайт", site, "вернул статус-код: ", resp.StatusCode)
-		}
+	if resp.StatusCode == http.StatusOK {
+		filename := filepath.Join(resultDir, strings.ReplaceAll(site, "/", "_")+".html")
+		return saveHTML(filename, resp.Body)
+	} else {
+		fmt.Println("Сайт", site, "вернул статус-код: ", resp.StatusCode)
+		return nil
 	}
 }
 
-// func openFile(inputFilePath *string){
-// 	file, err := os.Open(*inputFilePath)
-// 	if err != nil {
-// 		fmt.Println("error by opening a file:", err)
-// 		return
-// 	}
-// 	defer file.Close()
-// }
+func saveHTML(filename string, body io.Reader) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, body)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Файл", filename, "сохранен.")
+	return nil
+}
