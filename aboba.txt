@@ -1,6 +1,6 @@
-qwerty.com
-123
+http://qwerty.com
+http://123.cs
 
-google.com
+http://google.com
 
-youtube.com
+http://youtube.com

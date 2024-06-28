@@ -10,10 +10,6 @@ import (
 	"strings"
 )
 
-func readFile() {
-
-}
-
 // /home/arseny/rbs_studying
 func main() {
 	inputFilePath := flag.String("src", "", "input")
@@ -54,7 +50,7 @@ func main() {
 			fmt.Println("error by sending response: ", err)
 			continue
 		}
-		defer resp.Body.Close()
+		defer resp.Body.Close() // проблемный дефер
 
 		if resp.StatusCode == http.StatusOK {
 			filename := filepath.Join(*resultDir, strings.ReplaceAll(site, "/", "_")+".html")
@@ -63,7 +59,7 @@ func main() {
 				fmt.Println("error by creating file: ", err)
 				continue
 			}
-			defer file.Close()
+			defer file.Close() // проблемный дефер
 
 			fmt.Println("Файл", filename, "сохранен.")
 
