@@ -10,11 +10,26 @@ import (
 	"strings"
 )
 
+func readFile() {
+
+}
+
 // /home/arseny/rbs_studying
 func main() {
-	inputFilePath := flag.String("src", "sites.txt", "input")
+	inputFilePath := flag.String("src", "", "input")
 	resultDir := flag.String("dst", "result", "output")
 	flag.Parse()
+
+	// проверка на корректность флагов
+
+	if *inputFilePath == "" || *resultDir == "" {
+		fmt.Println("wrong path/path doesn't exist")
+		return
+	}
+	// создание директории при ее отсутствии
+	if _, err := os.Stat(*resultDir); os.IsNotExist(err) {
+		os.MkdirAll(*resultDir, 0755)
+	}
 
 	file, err := os.Open(*inputFilePath)
 	if err != nil {
@@ -26,11 +41,11 @@ func main() {
 	var sites []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			fmt.Println("error by reading file: ", err)
+			return
+		}
 		sites = append(sites, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Println("error by reading file: ", err)
-		return
 	}
 
 	for _, site := range sites {
@@ -57,3 +72,12 @@ func main() {
 		}
 	}
 }
+
+// func openFile(inputFilePath *string){
+// 	file, err := os.Open(*inputFilePath)
+// 	if err != nil {
+// 		fmt.Println("error by opening a file:", err)
+// 		return
+// 	}
+// 	defer file.Close()
+// }
