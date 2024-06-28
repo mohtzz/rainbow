@@ -12,7 +12,6 @@ import (
 	"time"
 )
 
-// /home/arseny/rbs_studying/rainbow
 func main() {
 	start := time.Now()
 	defer func() {
@@ -35,13 +34,13 @@ func main() {
 	if _, err := os.Stat(*resultDir); os.IsNotExist(err) {
 		os.MkdirAll(*resultDir, 0755)
 	}
-
+	// чтение файла с помощью функции
 	sites, err := readSitesFromFile(*inputFilePath)
 	if err != nil {
 		fmt.Println("error by reading file: ", err)
 		return
 	}
-
+	// get-запросы и обработка всех сайтов из файла
 	for _, site := range sites {
 		err := processSite(site, *resultDir)
 		if err != nil {
@@ -50,6 +49,7 @@ func main() {
 	}
 }
 
+// чтение файла
 func readSitesFromFile(filePath string) ([]string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -68,13 +68,14 @@ func readSitesFromFile(filePath string) ([]string, error) {
 	return sites, nil
 }
 
+// обработка сайта и get-запрос
 func processSite(site string, resultDir string) error {
 	resp, err := http.Get(site)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-
+	// проверка статус-кода и форматирование
 	if resp.StatusCode == http.StatusOK {
 		filename := filepath.Join(resultDir, strings.ReplaceAll(site, "/", "_")+".html")
 		return saveHTML(filename, resp.Body)
@@ -84,6 +85,7 @@ func processSite(site string, resultDir string) error {
 	}
 }
 
+// сохранение сайта в формате html
 func saveHTML(filename string, body io.Reader) error {
 	file, err := os.Create(filename)
 	if err != nil {
